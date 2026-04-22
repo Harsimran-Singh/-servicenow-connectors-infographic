@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ServiceNow × Microsoft 365 Copilot — All Three Connectors</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f0f3f9;
+  --card: #fff;
+  --ink: #0d1117;
+  --muted: #64748b;
+  --border: #e1e7f0;
+  --blue: #0078d4;
+  --blue-lt: #dbeeff;
+  --green: #107c41;
+  --green-lt: #e3f5ea;
+  --amber: #7d4e00;
+  --amber-lt: #fff8e1;
+  --red: #a80000;
+  --red-lt: #fdf0f0;
+  --purple: #5c2d91;
+  --purple-lt: #f0eaf9;
+  --teal: #006e5a;
+  --teal-lt: #e0f5f1;
+  --orange: #8f3b00;
+  --orange-lt: #fff2e8;
+}
+
+body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--ink); padding: 36px 20px 52px; }
+.page { max-width: 1020px; margin: 0 auto; }
+
+/* HEADER */
+.header { margin-bottom: 32px; animation: fadeDown 0.5s ease both; }
+.eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--blue); margin-bottom: 8px; }
+h1 { font-family: 'Syne', sans-serif; font-size: clamp(20px, 3vw, 30px); font-weight: 800; line-height: 1.15; }
+h1 em { color: var(--blue); font-style: normal; }
+.sub { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+.doc-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.doc-pill { display: inline-flex; align-items: center; gap: 5px; background: var(--blue); color: white; font-size: 10px; font-weight: 600; padding: 4px 11px; border-radius: 20px; text-decoration: none; }
+.doc-pill.green { background: var(--green); }
+.doc-pill.teal  { background: var(--teal); }
+
+/* CONNECTOR CARDS — top row */
+.connectors-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 10px;
+  animation: fadeDown 0.5s 0.06s ease both;
+}
+.conn-card {
+  border-radius: 14px;
+  padding: 20px 18px;
+  text-align: center;
+  box-shadow: 0 3px 16px rgba(0,0,0,0.09);
+  position: relative;
+}
+.conn-card.knowledge { background: linear-gradient(135deg, #0078d4, #005a9e); color: white; }
+.conn-card.catalog   { background: linear-gradient(135deg, #107c41, #0a5c30); color: white; }
+.conn-card.tickets   { background: linear-gradient(135deg, #7a4f00, #5a3800); color: white; }
+.conn-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; margin-bottom: 6px; }
+.conn-name  { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; margin-bottom: 6px; line-height: 1.2; }
+.conn-scope { font-size: 11px; opacity: 0.85; line-height: 1.5; margin-bottom: 10px; }
+.conn-status {
+  display: inline-block; font-size: 9.5px; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px; background: rgba(255,255,255,0.2);
+}
+
+/* FLOW SECTION */
+.flow-section {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+  animation: fadeUp 0.5s 0.1s ease both;
+}
+
+/* content type blocks under each connector */
+.content-col { display: flex; flex-direction: column; gap: 10px; }
+
+.ct-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 13px 14px;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.ct-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+.ct-head { font-size: 12px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+.ct-icon { font-size: 15px; }
+.ct-body { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.ct-tag {
+  display: inline-block; margin-top: 7px;
+  font-size: 9.5px; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px; letter-spacing: 0.03em;
+}
+.t-acl   { background: #d1fae5; color: #065f46; }
+.t-warn  { background: #fef3c7; color: #7d4e00; }
+.t-info  { background: var(--blue-lt); color: var(--blue); }
+.t-adv   { background: #fde8e8; color: #991b1b; }
+.t-ga    { background: #e0ffe8; color: #065f46; }
+.t-prev  { background: #fff8e0; color: #7d4e00; }
+
+/* knowledge col accent */
+.ct-card.kn { border-left: 3px solid var(--blue); }
+.ct-card.ca { border-left: 3px solid var(--green); }
+.ct-card.ti { border-left: 3px solid var(--amber); }
+
+/* DOWN ARROWS from connector to content */
+.down-arrows {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 6px;
+}
+.d-arr { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.d-shaft { width: 2px; height: 22px; border-radius: 2px; }
+.d-shaft.kn { background: linear-gradient(to bottom, #90c4f0, var(--blue)); }
+.d-shaft.ca { background: linear-gradient(to bottom, #90d4a8, var(--green)); }
+.d-shaft.ti { background: linear-gradient(to bottom, #f0c870, var(--amber)); }
+.d-head { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; }
+.d-head.kn { border-top: 7px solid var(--blue); }
+.d-head.ca { border-top: 7px solid var(--green); }
+.d-head.ti { border-top: 7px solid var(--amber); }
+
+/* EMPLOYEE EXPERIENCE SECTION */
+.exp-section {
+  margin-bottom: 28px;
+  animation: fadeUp 0.5s 0.16s ease both;
+}
+.section-title {
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+  color: var(--ink); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title .bar { width: 4px; height: 16px; border-radius: 2px; display: inline-block; }
+
+.exp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.exp-card {
+  background: var(--card);
+  border-radius: 10px; padding: 14px 15px;
+  border: 1.5px solid var(--border);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.exp-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+.exp-q { font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 5px; display: flex; align-items: flex-start; gap: 6px; }
+.exp-a { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.exp-card.kn { border-top: 3px solid var(--blue); }
+.exp-card.ca { border-top: 3px solid var(--green); }
+.exp-card.ti { border-top: 3px solid var(--amber); }
+
+/* COMPARISON TABLE */
+.table-section { margin-bottom: 28px; animation: fadeUp 0.5s 0.2s ease both; }
+table {
+  width: 100%; border-collapse: collapse;
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 12px; overflow: hidden; font-size: 11.5px;
+}
+th {
+  background: #f8f9fc; padding: 10px 14px;
+  text-align: left; font-weight: 600; font-size: 11px;
+  color: var(--muted); border-bottom: 1.5px solid var(--border);
+}
+td { padding: 10px 14px; border-bottom: 1px solid #f0f2f8; vertical-align: top; line-height: 1.5; color: var(--ink); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f8f9ff; }
+.dot-kn { color: var(--blue); font-weight: 700; }
+.dot-ca { color: var(--green); font-weight: 700; }
+.dot-ti { color: var(--amber); font-weight: 700; }
+.check { color: var(--green); font-weight: 700; }
+.cross { color: var(--red); }
+.pill {
+  display: inline-block; font-size: 9.5px; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px;
+}
+.pill-prev { background: var(--amber-lt); color: var(--amber); }
+.pill-ga   { background: var(--green-lt); color: var(--green); }
+
+/* CALLOUTS */
+.callouts {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  margin-bottom: 24px; animation: fadeUp 0.5s 0.24s ease both;
+}
+.callout {
+  border-radius: 10px; padding: 15px 17px;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.callout.warn  { background: var(--amber-lt); border: 1.5px solid #fcd34d; }
+.callout.crit  { background: var(--red-lt);   border: 1.5px solid #fca5a5; }
+.callout.info  { background: var(--blue-lt);  border: 1.5px solid #90c4f0; }
+.callout.tip   { background: var(--green-lt); border: 1.5px solid #6fcf97; }
+.c-icon { font-size: 20px; flex-shrink: 0; }
+.c-title { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.callout.warn .c-title { color: var(--amber); }
+.callout.crit .c-title { color: var(--red); }
+.callout.info .c-title { color: var(--blue); }
+.callout.tip  .c-title { color: var(--green); }
+.c-body { font-size: 11px; color: var(--muted); line-height: 1.55; }
+
+/* FOOTER */
+.footer { text-align: center; font-size: 10.5px; color: #a0aec0; margin-top: 8px; animation: fadeUp 0.5s 0.28s ease both; }
+.footer a { color: var(--blue); text-decoration: none; }
+
+@keyframes fadeDown { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeUp   { from { opacity:0; transform:translateY(14px);  } to { opacity:1; transform:translateY(0); } }
+
+@media (max-width: 680px) {
+  .connectors-row, .flow-section, .down-arrows, .exp-grid, .callouts { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="eyebrow">Microsoft Official Documentation · Three Connector Architecture</div>
+  <h1>ServiceNow × Microsoft 365 Copilot<br><em>Which Activity Goes Through Which Connector</em></h1>
+  <p class="sub">Microsoft publishes three separate connectors for ServiceNow. Each connector handles a distinct content type with its own ACL model, crawl settings, and user experience. Based on official Microsoft Learn documentation.</p>
+  <div class="doc-pills">
+    <a class="doc-pill" href="https://learn.microsoft.com/en-us/microsoft-365/copilot/connectors/servicenow-knowledge-deployment" target="_blank">📰 Knowledge Connector Docs</a>
+    <a class="doc-pill green" href="https://learn.microsoft.com/en-us/microsoft-365/copilot/connectors/servicenow-catalog-deployment" target="_blank">🛒 Catalog Connector Docs</a>
+    <a class="doc-pill teal" href="https://learn.microsoft.com/en-us/microsoft-365/copilot/connectors/servicenow-tickets-deployment" target="_blank">🎫 Tickets Connector Docs</a>
+  </div>
+</div>
+
+<!-- TOP ROW: 3 Connector Cards -->
+<div class="connectors-row">
+
+  <div class="conn-card knowledge">
+    <div class="conn-badge">Connector 1</div>
+    <div class="conn-name">ServiceNow<br>Knowledge</div>
+    <div class="conn-scope">Indexes KB articles for semantic search. Used by ESS Agent as knowledge grounding source.</div>
+    <div class="conn-status">⚠️ Preview</div>
+  </div>
+
+  <div class="conn-card catalog">
+    <div class="conn-badge">Connector 2</div>
+    <div class="conn-name">ServiceNow<br>Catalog</div>
+    <div class="conn-scope">Indexes catalog items so employees can discover and request services via Copilot.</div>
+    <div class="conn-status">✅ Generally Available</div>
+  </div>
+
+  <div class="conn-card tickets">
+    <div class="conn-badge">Connector 3</div>
+    <div class="conn-name">ServiceNow<br>Tickets</div>
+    <div class="conn-scope">Indexes ticket records (INC, CHG, PRB, REQ, TASK) for support team visibility in Copilot.</div>
+    <div class="conn-status">✅ Generally Available</div>
+  </div>
+
+</div>
+
+<!-- DOWN ARROWS -->
+<div class="down-arrows">
+  <div class="d-arr"><div class="d-shaft kn"></div><div class="d-head kn"></div></div>
+  <div class="d-arr"><div class="d-shaft ca"></div><div class="d-head ca"></div></div>
+  <div class="d-arr"><div class="d-shaft ti"></div><div class="d-head ti"></div></div>
+</div>
+
+<!-- CONTENT TYPE CARDS -->
+<div class="flow-section">
+
+  <!-- KNOWLEDGE -->
+  <div class="content-col">
+    <div class="ct-card kn">
+      <div class="ct-head"><span class="ct-icon">📰</span> Knowledge Base Articles</div>
+      <div class="ct-body">Published IT & HR KB articles. Draft and retired articles excluded by default. Filtered via <code style="font-size:10px; background:#f0f2f8; padding:1px 4px; border-radius:3px;">workflow_state=published</code>.</div>
+      <span class="ct-tag t-acl">✓ User Criteria ACL</span>
+    </div>
+    <div class="ct-card kn">
+      <div class="ct-head"><span class="ct-icon">🔐</span> Permissions Model</div>
+      <div class="ct-body">User Criteria evaluated at query time. Advanced flow required when scripted conditions or HR profile-based rules are in use. Must read <code style="font-size:10px; background:#f0f2f8; padding:1px 4px; border-radius:3px;">user_criteria</code> table.</div>
+      <span class="ct-tag t-adv">⚠️ Advanced flow for ESS</span>
+    </div>
+    <div class="ct-card kn">
+      <div class="ct-head"><span class="ct-icon">🔄</span> Crawl Defaults</div>
+      <div class="ct-body">Full crawl: Daily. Incremental: Every 15 min. Permissions only updated on full crawl.</div>
+      <span class="ct-tag t-prev">Preview · ESS Integration</span>
+    </div>
+  </div>
+
+  <!-- CATALOG -->
+  <div class="content-col">
+    <div class="ct-card ca">
+      <div class="ct-head"><span class="ct-icon">🛒</span> Service Catalog Items</div>
+      <div class="ct-body">Active, published catalog items, bundles, and tasks. Default filter: <code style="font-size:10px; background:#f0f2f8; padding:1px 4px; border-radius:3px;">active=true^workflow_state=published</code>.</div>
+      <span class="ct-tag t-acl">✓ User Criteria ACL</span>
+    </div>
+    <div class="ct-card ca">
+      <div class="ct-head"><span class="ct-icon">🔐</span> Permissions Model</div>
+      <div class="ct-body">Simple flow (no advanced scripts) or Advanced flow (scripted user criteria). Identity mapped via email to Azure AD UPN. Catalog role required on service account.</div>
+      <span class="ct-tag t-acl">✓ Federated Auth Recommended</span>
+    </div>
+    <div class="ct-card ca">
+      <div class="ct-head"><span class="ct-icon">🔄</span> Crawl Defaults</div>
+      <div class="ct-body">Full crawl: Daily. Incremental: Every 15 min. Permissions only updated on full crawl. Not submitted requests — those become tickets.</div>
+      <span class="ct-tag t-ga">GA · Read-Only Discovery</span>
+    </div>
+  </div>
+
+  <!-- TICKETS -->
+  <div class="content-col">
+    <div class="ct-card ti">
+      <div class="ct-head"><span class="ct-icon">🎫</span> Ticket Records</div>
+      <div class="ct-body">Incidents (INC), Changes (CHG), Problems (PRB), Requests (REQ), Tasks (TASK). Scoped by assignment group and caller identity.</div>
+      <span class="ct-tag t-warn">⚠️ High Sensitivity</span>
+    </div>
+    <div class="ct-card ti">
+      <div class="ct-head"><span class="ct-icon">🔐</span> Permissions Model</div>
+      <div class="ct-body">Based on assignment group membership and caller_id. Service account needs <code style="font-size:10px; background:#f0f2f8; padding:1px 4px; border-radius:3px;">itil</code> role. Apply crawl-time query filters to exclude HR, Legal, SecOps groups.</div>
+      <span class="ct-tag t-warn">⚠️ Exclude sensitive groups</span>
+    </div>
+    <div class="ct-card ti">
+      <div class="ct-head"><span class="ct-icon">🔄</span> Crawl Defaults</div>
+      <div class="ct-body">Full crawl: Daily. Incremental: Every 15 min. NOT part of ESS Agent integration — separate connector for support team use cases.</div>
+      <span class="ct-tag t-ga">GA · Support Teams</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- EMPLOYEE EXPERIENCE -->
+<div class="exp-section">
+  <div class="section-title">
+    <span class="bar" style="background:var(--purple);"></span>
+    Employee Experience — What Gets Answered by Which Connector
+  </div>
+  <div class="exp-grid">
+
+    <div class="exp-card kn">
+      <div class="exp-q">📰 <span>"How do I apply for leave?"</span></div>
+      <div class="exp-a">→ Knowledge connector surfaces HR KB article. Employee sees only articles their User Criteria permits.</div>
+    </div>
+    <div class="exp-card kn">
+      <div class="exp-q">📰 <span>"How do I set up VPN?"</span></div>
+      <div class="exp-a">→ Knowledge connector returns IT procedure article. Semantic search — not keyword match.</div>
+    </div>
+    <div class="exp-card ca">
+      <div class="exp-q">🛒 <span>"How do I request a new laptop?"</span></div>
+      <div class="exp-a">→ Catalog connector returns the laptop request catalog item — scoped to items that user's role can see.</div>
+    </div>
+    <div class="exp-card ca">
+      <div class="exp-q">🛒 <span>"What software can I request?"</span></div>
+      <div class="exp-a">→ Catalog connector surfaces available software catalog items visible to the user's department/role.</div>
+    </div>
+    <div class="exp-card ti">
+      <div class="exp-q">🎫 <span>"Show me open incidents for my team"</span></div>
+      <div class="exp-a">→ Tickets connector returns INC records scoped by assignment group. Support/IT use case.</div>
+    </div>
+    <div class="exp-card ti">
+      <div class="exp-q">🎫 <span>"What's the status of change CHG001234?"</span></div>
+      <div class="exp-a">→ Tickets connector retrieves CHG record. User must have access per ServiceNow permissions.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- COMPARISON TABLE -->
+<div class="table-section">
+  <div class="section-title">
+    <span class="bar" style="background:var(--blue);"></span>
+    Full Connector Comparison
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th class="dot-kn">📰 Knowledge</th>
+        <th class="dot-ca">🛒 Catalog</th>
+        <th class="dot-ti">🎫 Tickets</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Content Indexed</strong></td>
+        <td>Published KB articles</td>
+        <td>Active catalog items, bundles, tasks</td>
+        <td>INC, CHG, PRB, REQ, TASK records</td>
+      </tr>
+      <tr>
+        <td><strong>GA Status</strong></td>
+        <td><span class="pill pill-prev">Preview</span></td>
+        <td><span class="pill pill-ga">GA</span></td>
+        <td><span class="pill pill-ga">GA</span></td>
+      </tr>
+      <tr>
+        <td><strong>Used by ESS Agent</strong></td>
+        <td><span class="check">✓ Primary integration</span></td>
+        <td>Not documented for ESS</td>
+        <td>Not documented for ESS</td>
+      </tr>
+      <tr>
+        <td><strong>ACL Trimming</strong></td>
+        <td><span class="check">✓ User Criteria</span></td>
+        <td><span class="check">✓ User Criteria</span></td>
+        <td><span class="check">✓ Assignment Group</span></td>
+      </tr>
+      <tr>
+        <td><strong>Auth — Recommended</strong></td>
+        <td>OAuth 2.0 (Simple) / Basic (Advanced)</td>
+        <td>Federated Auth (OIDC)</td>
+        <td>OAuth 2.0 / Federated Auth</td>
+      </tr>
+      <tr>
+        <td><strong>ServiceNow Role Needed</strong></td>
+        <td>Read KB + user_criteria table</td>
+        <td>catalog_admin, user_criteria_admin</td>
+        <td>itil role</td>
+      </tr>
+      <tr>
+        <td><strong>Simple/Advanced Flow</strong></td>
+        <td><span class="check">✓ Both supported</span></td>
+        <td><span class="check">✓ Both supported</span></td>
+        <td>N/A</td>
+      </tr>
+      <tr>
+        <td><strong>Incremental Crawl</strong></td>
+        <td>Every 15 min</td>
+        <td>Every 15 min</td>
+        <td>Every 15 min</td>
+      </tr>
+      <tr>
+        <td><strong>Attachments Indexed</strong></td>
+        <td><span class="cross">✗ Not in Preview</span></td>
+        <td>Not documented</td>
+        <td>Not documented</td>
+      </tr>
+      <tr>
+        <td><strong>Primary Audience</strong></td>
+        <td>All employees (ESS)</td>
+        <td>All employees (self-service)</td>
+        <td>IT support / operations teams</td>
+      </tr>
+      <tr>
+        <td><strong>Sensitivity Risk</strong></td>
+        <td>Low (if ACLs clean)</td>
+        <td>Medium (pricing, restricted items)</td>
+        <td><strong style="color:var(--red)">High</strong> (PII, HR, Legal, Security)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- CALLOUTS -->
+<div class="callouts">
+  <div class="callout crit">
+    <div class="c-icon">🚨</div>
+    <div>
+      <div class="c-title">Tickets Connector = Highest Governance Risk</div>
+      <div class="c-body">Always apply crawl-time query filters to exclude sensitive assignment groups (HR, Legal, Security Ops). A misconfigured SN ACL means Copilot faithfully exposes that misconfiguration to users.</div>
+    </div>
+  </div>
+  <div class="callout warn">
+    <div class="c-icon">⚠️</div>
+    <div>
+      <div class="c-title">Knowledge Connector Still Preview for ESS</div>
+      <div class="c-body">The ESS-specific Knowledge integration is Preview only. Hierarchical permissions not supported — article-level ACL overrides KB-level. Attachments not indexed. Validate before production rollout.</div>
+    </div>
+  </div>
+  <div class="callout tip">
+    <div class="c-icon">✅</div>
+    <div>
+      <div class="c-title">Catalog Connector — Federated Auth is Recommended</div>
+      <div class="c-body">Per Microsoft docs, Federated Auth (OIDC via Entra ID) is the recommended auth path for the Catalog connector. No client secret storage or rotation needed. Assign catalog_admin + user_criteria_admin roles to the integration user.</div>
+    </div>
+  </div>
+  <div class="callout info">
+    <div class="c-icon">💡</div>
+    <div>
+      <div class="c-title">Three Connectors ≠ One ESS Integration</div>
+      <div class="c-body">Knowledge connector is the only one Microsoft documents for ESS Agent integration. Catalog and Tickets are standalone connectors deployable independently in M365 Admin Center — surfacing content in Copilot search, not as part of the ESS agent flow.</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Sources: 
+  <a href="https://learn.microsoft.com/en-us/microsoft-365/copilot/employee-self-service/servicenow" target="_blank">ESS + ServiceNow</a> · 
+  <a href="https://learn.microsoft.com/en-us/microsoft-365/copilot/connectors/servicenow-catalog-deployment" target="_blank">Catalog Connector</a> · 
+  <a href="https://learn.microsoft.com/en-us/microsoft-365/copilot/connectors/servicenow-tickets-deployment" target="_blank">Tickets Connector</a> · 
+  Microsoft Learn · Updated April 2026 · FTA Reference
+</div>
+
+</div>
+</body>
+</html>
