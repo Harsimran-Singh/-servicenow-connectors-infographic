@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ServiceNow × Microsoft 365 Copilot — Connector Architecture</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1b2e;
+  --card: #112240;
+  --card2: #0a1628;
+  --ink: #e8eef8;
+  --muted: #8ba3c0;
+  --border: #1e3a5f;
+  --blue: #2e9fe6;
+  --blue-lt: #0d2a45;
+  --green: #2db37a;
+  --green-lt: #0a2820;
+  --amber: #f0a500;
+  --amber-lt: #2a1f00;
+  --red: #e85d5d;
+  --red-lt: #2a0e0e;
+  --purple: #a47fe0;
+  --purple-lt: #1a1035;
+  --teal: #26c6b0;
+  --teal-lt: #082420;
+  --orange: #f07850;
+}
+
+body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--ink); padding: 36px 20px 52px; }
+.page { max-width: 1040px; margin: 0 auto; }
+
+/* HEADER */
+.header { margin-bottom: 32px; animation: fadeDown 0.5s ease both; }
+.eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--blue); margin-bottom: 8px; }
+h1 { font-family: 'Syne', sans-serif; font-size: clamp(20px, 3vw, 30px); font-weight: 800; line-height: 1.15; color: var(--ink); }
+h1 em { color: var(--blue); font-style: normal; }
+.sub { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+.doc-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.doc-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; padding: 4px 11px; border-radius: 20px; text-decoration: none; border: 1px solid; }
+.doc-pill.blue   { background: #0d2a45; color: var(--blue);   border-color: var(--blue); }
+.doc-pill.green  { background: var(--green-lt); color: var(--green); border-color: var(--green); }
+.doc-pill.purple { background: var(--purple-lt); color: var(--purple); border-color: var(--purple); }
+
+/* ── CONNECTOR TYPE EXPLAINER ── */
+.type-explainer {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  margin-bottom: 28px;
+  animation: fadeDown 0.5s 0.06s ease both;
+}
+.type-card {
+  border-radius: 12px; padding: 18px 20px;
+  border: 1.5px solid;
+}
+.type-card.graph { background: #0a1e36; border-color: var(--blue); }
+.type-card.pp    { background: #160e2e; border-color: var(--purple); }
+.type-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+.type-card.graph .type-label { color: var(--blue); }
+.type-card.pp    .type-label { color: var(--purple); }
+.type-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; margin-bottom: 8px; color: var(--ink); }
+.type-where { font-size: 10.5px; font-weight: 600; margin-bottom: 8px; }
+.type-card.graph .type-where { color: var(--blue); }
+.type-card.pp    .type-where { color: var(--purple); }
+.type-desc { font-size: 11.5px; color: var(--muted); line-height: 1.6; }
+.type-analogy {
+  margin-top: 10px; padding: 8px 12px; border-radius: 8px;
+  font-size: 11px; font-style: italic; line-height: 1.5;
+}
+.type-card.graph .type-analogy { background: #0d2a45; color: #90c4e8; }
+.type-card.pp    .type-analogy { background: #1a1035; color: #c4a0f0; }
+
+/* ── DECISION BANNER ── */
+.decision-banner {
+  background: #0a1e10; border: 1.5px solid var(--green);
+  border-radius: 10px; padding: 14px 18px;
+  margin-bottom: 28px; display: flex; gap: 12px; align-items: flex-start;
+  animation: fadeDown 0.5s 0.1s ease both;
+}
+.db-icon { font-size: 20px; flex-shrink: 0; }
+.db-title { font-size: 12px; font-weight: 700; color: var(--green); margin-bottom: 4px; }
+.db-body { font-size: 11.5px; color: #7dcca0; line-height: 1.6; }
+.db-body strong { color: var(--green); }
+
+/* ── 3 CONNECTOR CARDS ── */
+.connectors-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  margin-bottom: 10px;
+  animation: fadeDown 0.5s 0.12s ease both;
+}
+.conn-card {
+  border-radius: 14px; padding: 20px 18px; text-align: center;
+  border: 1.5px solid; position: relative;
+}
+.conn-card.knowledge { background: #081d38; border-color: var(--blue); }
+.conn-card.catalog   { background: #0f1e38; border-color: var(--purple); }
+.conn-card.tickets   { background: #0f1e38; border-color: var(--purple); }
+.conn-type-badge {
+  display: inline-block; font-size: 9px; font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 20px; margin-bottom: 8px;
+}
+.badge-graph { background: #0d2a45; color: var(--blue); border: 1px solid var(--blue); }
+.badge-pp    { background: #1a1035; color: var(--purple); border: 1px solid var(--purple); }
+.conn-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; margin-bottom: 4px; color: var(--ink); line-height: 1.2; }
+.conn-where { font-size: 10px; color: var(--muted); margin-bottom: 8px; }
+.conn-scope { font-size: 11px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+.conn-status { display: inline-block; font-size: 9.5px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+.status-prev { background: #2a1f00; color: var(--amber); border: 1px solid var(--amber); }
+.status-ga   { background: #0a2820; color: var(--green); border: 1px solid var(--green); }
+
+/* DOWN ARROWS */
+.down-arrows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 6px; }
+.d-arr { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.d-shaft { width: 2px; height: 20px; border-radius: 2px; }
+.d-shaft.kn { background: linear-gradient(to bottom, var(--blue), #1a5f9e); }
+.d-shaft.pp { background: linear-gradient(to bottom, var(--purple), #6040a0); }
+.d-head { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; }
+.d-head.kn { border-top: 7px solid var(--blue); }
+.d-head.pp { border-top: 7px solid var(--purple); }
+
+/* CONTENT CARDS */
+.flow-section { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; animation: fadeUp 0.5s 0.16s ease both; }
+.content-col { display: flex; flex-direction: column; gap: 10px; }
+.ct-card { background: var(--card); border: 1.5px solid var(--border); border-radius: 10px; padding: 13px 14px; transition: transform 0.18s, box-shadow 0.18s; }
+.ct-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.3); }
+.ct-card.kn { border-left: 3px solid var(--blue); }
+.ct-card.pp { border-left: 3px solid var(--purple); }
+.ct-head { font-size: 12px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+.ct-icon { font-size: 14px; }
+.ct-body { font-size: 11px; color: var(--muted); line-height: 1.55; }
+.ct-tag { display: inline-block; margin-top: 7px; font-size: 9.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.03em; }
+.t-acl   { background: #0a2820; color: var(--green); border: 1px solid var(--green); }
+.t-warn  { background: #2a1500; color: var(--amber); border: 1px solid var(--amber); }
+.t-info  { background: #0d2a45; color: var(--blue);  border: 1px solid var(--blue); }
+.t-pp    { background: #1a1035; color: var(--purple); border: 1px solid var(--purple); }
+
+/* EMPLOYEE EXP */
+.exp-section { margin-bottom: 28px; animation: fadeUp 0.5s 0.2s ease both; }
+.section-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.section-title .bar { width: 4px; height: 16px; border-radius: 2px; display: inline-block; }
+.exp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.exp-card { background: var(--card); border-radius: 10px; padding: 14px 15px; border: 1.5px solid var(--border); transition: transform 0.18s, box-shadow 0.18s; }
+.exp-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.25); }
+.exp-q { font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 5px; display: flex; align-items: flex-start; gap: 6px; }
+.exp-a { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.exp-card.kn { border-top: 3px solid var(--blue); }
+.exp-card.pp { border-top: 3px solid var(--purple); }
+
+/* COMPARISON TABLE */
+.table-section { margin-bottom: 28px; animation: fadeUp 0.5s 0.22s ease both; }
+table { width: 100%; border-collapse: collapse; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; font-size: 11.5px; }
+th { background: var(--card2); padding: 10px 14px; text-align: left; font-weight: 600; font-size: 11px; color: var(--muted); border-bottom: 1.5px solid var(--border); }
+td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; color: var(--ink); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #0a1e36; }
+.pill { display: inline-block; font-size: 9.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+.pill-prev { background: var(--amber-lt); color: var(--amber); border: 1px solid var(--amber); }
+.pill-ga   { background: var(--green-lt); color: var(--green); border: 1px solid var(--green); }
+.pill-graph { background: #0d2a45; color: var(--blue); border: 1px solid var(--blue); }
+.pill-pp   { background: var(--purple-lt); color: var(--purple); border: 1px solid var(--purple); }
+.check { color: var(--green); font-weight: 700; }
+.cross { color: var(--red); }
+
+/* CALLOUTS */
+.callouts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; animation: fadeUp 0.5s 0.26s ease both; }
+.callout { border-radius: 10px; padding: 15px 17px; display: flex; gap: 12px; align-items: flex-start; }
+.callout.warn  { background: var(--amber-lt); border: 1.5px solid var(--amber); }
+.callout.crit  { background: var(--red-lt);   border: 1.5px solid var(--red); }
+.callout.info  { background: var(--blue-lt);  border: 1.5px solid var(--blue); }
+.callout.tip   { background: var(--green-lt); border: 1.5px solid var(--green); }
+.c-icon { font-size: 20px; flex-shrink: 0; }
+.c-title { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.callout.warn .c-title { color: var(--amber); }
+.callout.crit .c-title { color: var(--red); }
+.callout.info .c-title { color: var(--blue); }
+.callout.tip  .c-title { color: var(--green); }
+.c-body { font-size: 11px; color: var(--muted); line-height: 1.55; }
+
+/* FOOTER */
+.footer { text-align: center; font-size: 10.5px; color: #4a6080; margin-top: 8px; animation: fadeUp 0.5s 0.3s ease both; }
+.footer a { color: var(--blue); text-decoration: none; }
+
+@keyframes fadeDown { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeUp   { from { opacity:0; transform:translateY(14px);  } to { opacity:1; transform:translateY(0); } }
+
+@media (max-width: 700px) {
+  .type-explainer, .connectors-row, .flow-section, .down-arrows, .exp-grid, .callouts { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="eyebrow">Microsoft Official Documentation · Connector Architecture</div>
+  <h1>ServiceNow × Microsoft 365 Copilot<br><em>Which Connector Type for Which Activity</em></h1>
+  <p class="sub">Three ServiceNow connectors across two fundamentally different connector types — understanding the distinction is critical for architecture and governance decisions.</p>
+  <div class="doc-pills">
+    <a class="doc-pill blue"   href="https://learn.microsoft.com/en-us/microsoft-copilot-studio/knowledge-graph-vs-power-platform-connectors" target="_blank">📊 Copilot vs PP Connectors</a>
+    <a class="doc-pill green"  href="https://learn.microsoft.com/en-us/microsoft-365/copilot/connectors/servicenow-catalog-deployment" target="_blank">🛒 Catalog Connector</a>
+    <a class="doc-pill purple" href="https://learn.microsoft.com/en-us/microsoft-365/copilot/connectors/servicenow-tickets-deployment" target="_blank">🎫 Tickets Connector</a>
+  </div>
+</div>
+
+<!-- CONNECTOR TYPE EXPLAINER -->
+<div class="type-explainer">
+  <div class="type-card graph">
+    <div class="type-label">Type 1</div>
+    <div class="type-name">Copilot Connector<br>(Graph Connector)</div>
+    <div class="type-where">⚙️ Configured in: M365 Admin Center → Search & Intelligence</div>
+    <div class="type-desc">Ingests and indexes non-Microsoft content into Microsoft Graph. Copilot and agents get answers from the <strong style="color:#90c4e8">index</strong> — not from ServiceNow directly. Best for high-frequency read operations at scale.</div>
+    <div class="type-analogy">💡 Think of it as a <strong>search index</strong> — content is copied into Microsoft Graph once, then queried many times without hitting ServiceNow.</div>
+  </div>
+  <div class="type-card pp">
+    <div class="type-label">Type 2</div>
+    <div class="type-name">Power Platform Connector<br>(Real-Time)</div>
+    <div class="type-where">⚙️ Configured in: Copilot Studio → Agent Settings → Customize</div>
+    <div class="type-desc">Calls ServiceNow APIs live at runtime. No data movement or indexing. Each query hits ServiceNow directly. Best for real-time data, write operations, and transactional scenarios.</div>
+    <div class="type-analogy">💡 Think of it as a <strong>live API bridge</strong> — every query goes to ServiceNow in real time. Great for write-back, not for high-frequency reads.</div>
+  </div>
+</div>
+
+<!-- DECISION BANNER -->
+<div class="decision-banner">
+  <div class="db-icon">⚡</div>
+  <div>
+    <div class="db-title">Key Architecture Decision — Per Microsoft Learn</div>
+    <div class="db-body">
+      <strong>Knowledge article search is a high-frequency read operation.</strong> Using a Power Platform connector for KB articles puts unnecessary stress on the ServiceNow backend — every employee query hits ServiceNow directly. The <strong>Copilot (Graph) connector is the right choice</strong> for KB articles because data is indexed into Microsoft Graph once and served from there. Use Power Platform connectors only for real-time data needs (catalog browsing, ticket status) or write operations (raise ticket, submit request).
+    </div>
+  </div>
+</div>
+
+<!-- 3 CONNECTOR CARDS -->
+<div class="connectors-row">
+  <div class="conn-card knowledge">
+    <div class="conn-type-badge badge-graph">Copilot / Graph Connector</div>
+    <div class="conn-name">ServiceNow<br>Knowledge</div>
+    <div class="conn-where">M365 Admin Center → Search & Intelligence</div>
+    <div class="conn-scope">KB articles indexed into Microsoft Graph. ESS Agent reads from the index — not from ServiceNow directly. Handles high query volume without backend stress.</div>
+    <div class="conn-status status-prev">⚠️ Preview (ESS Integration)</div>
+  </div>
+  <div class="conn-card catalog">
+    <div class="conn-type-badge badge-pp">Power Platform Connector</div>
+    <div class="conn-name">ServiceNow<br>Catalog</div>
+    <div class="conn-where">Copilot Studio → Agent → Customize</div>
+    <div class="conn-scope">Real-time catalog item discovery for HRSD scenarios. Live API call to ServiceNow. Configured via agent settings, not Admin Center.</div>
+    <div class="conn-status status-ga">✅ GA</div>
+  </div>
+  <div class="conn-card tickets">
+    <div class="conn-type-badge badge-pp">Power Platform Connector</div>
+    <div class="conn-name">ServiceNow<br>Tickets</div>
+    <div class="conn-where">Copilot Studio → Agent → Customize</div>
+    <div class="conn-scope">Real-time ticket lookup and ITSM scenarios. Same PP connector pattern as Catalog — configured for ITSM use cases. Supports read and write operations.</div>
+    <div class="conn-status status-ga">✅ GA</div>
+  </div>
+</div>
+
+<!-- DOWN ARROWS -->
+<div class="down-arrows">
+  <div class="d-arr"><div class="d-shaft kn"></div><div class="d-head kn"></div></div>
+  <div class="d-arr"><div class="d-shaft pp"></div><div class="d-head pp"></div></div>
+  <div class="d-arr"><div class="d-shaft pp"></div><div class="d-head pp"></div></div>
+</div>
+
+<!-- CONTENT TYPE CARDS -->
+<div class="flow-section">
+  <div class="content-col">
+    <div class="ct-card kn">
+      <div class="ct-head"><span class="ct-icon">📰</span> Knowledge Base Articles</div>
+      <div class="ct-body">Published IT & HR KB articles. Indexed into Microsoft Graph. Employee queries answered from the index — zero load on ServiceNow per query.</div>
+      <span class="ct-tag t-acl">✓ User Criteria ACL</span>
+    </div>
+    <div class="ct-card kn">
+      <div class="ct-head"><span class="ct-icon">🔍</span> Semantic Search</div>
+      <div class="ct-body">Natural language Q&A grounded on indexed KB content. Scales to thousands of concurrent queries without ServiceNow API impact.</div>
+      <span class="ct-tag t-info">Index-based · No SN load</span>
+    </div>
+    <div class="ct-card kn">
+      <div class="ct-head"><span class="ct-icon">🔄</span> Crawl & Sync</div>
+      <div class="ct-body">Full crawl: Daily. Incremental: Every 15 min. Permissions updated on full crawl only. Advanced flow required for User Criteria.</div>
+      <span class="ct-tag t-warn">⚠️ Advanced flow for ESS</span>
+    </div>
+  </div>
+
+  <div class="content-col">
+    <div class="ct-card pp">
+      <div class="ct-head"><span class="ct-icon">🛒</span> Service Catalog Items</div>
+      <div class="ct-body">Real-time catalog browsing for HRSD scenarios. Live API call to ServiceNow on each query. Respects catalog visibility rules per user role.</div>
+      <span class="ct-tag t-pp">Real-time · Hits SN API</span>
+    </div>
+    <div class="ct-card pp">
+      <div class="ct-head"><span class="ct-icon">📋</span> Catalog Requests (REQ)</div>
+      <div class="ct-body">Submitted requests (write operations) handled via PP connector. Live read/write to ServiceNow — this is where real-time is appropriate.</div>
+      <span class="ct-tag t-acl">✓ SN ACL at runtime</span>
+    </div>
+    <div class="ct-card pp">
+      <div class="ct-head"><span class="ct-icon">⚙️</span> HRSD Scenario</div>
+      <div class="ct-body">HR service delivery — employee requests, leave, onboarding. Configured via Customize in ESS Agent settings in Copilot Studio.</div>
+      <span class="ct-tag t-pp">Copilot Studio config</span>
+    </div>
+  </div>
+
+  <div class="content-col">
+    <div class="ct-card pp">
+      <div class="ct-head"><span class="ct-icon">🎫</span> Ticket Records</div>
+      <div class="ct-body">INC, CHG, PRB, REQ, TASK. Real-time lookup of ticket status and details. Live API — each query hits ServiceNow directly.</div>
+      <span class="ct-tag t-warn">⚠️ Monitor SN load</span>
+    </div>
+    <div class="ct-card pp">
+      <div class="ct-head"><span class="ct-icon">✏️</span> Ticket Actions</div>
+      <div class="ct-body">Create incident, update ticket, add comments — write operations. Real-time PP connector is the correct pattern here, not Graph connector.</div>
+      <span class="ct-tag t-acl">✓ Right use of PP connector</span>
+    </div>
+    <div class="ct-card pp">
+      <div class="ct-head"><span class="ct-icon">⚙️</span> ITSM Scenario</div>
+      <div class="ct-body">IT service management — same PP connector as Catalog, configured for ITSM. Set up via Customize in agent settings in Copilot Studio.</div>
+      <span class="ct-tag t-pp">Copilot Studio config</span>
+    </div>
+  </div>
+</div>
+
+<!-- EMPLOYEE SCENARIOS -->
+<div class="exp-section">
+  <div class="section-title">
+    <span class="bar" style="background:var(--purple);"></span>
+    Employee Scenarios — Which Connector Responds
+  </div>
+  <div class="exp-grid">
+    <div class="exp-card kn">
+      <div class="exp-q">📰 <span>"How do I apply for leave?"</span></div>
+      <div class="exp-a">→ <strong style="color:var(--blue)">Graph Connector</strong> — KB article returned from Microsoft Graph index. No ServiceNow API call made.</div>
+    </div>
+    <div class="exp-card kn">
+      <div class="exp-q">📰 <span>"How do I set up VPN?"</span></div>
+      <div class="exp-a">→ <strong style="color:var(--blue)">Graph Connector</strong> — Semantic search on indexed IT KB. Scales to all employees simultaneously.</div>
+    </div>
+    <div class="exp-card pp">
+      <div class="exp-q">🛒 <span>"What can I request for my home office?"</span></div>
+      <div class="exp-a">→ <strong style="color:var(--purple)">PP Connector</strong> — Live catalog query to ServiceNow. HRSD scenario via Copilot Studio agent customization.</div>
+    </div>
+    <div class="exp-card pp">
+      <div class="exp-q">🛒 <span>"Submit a laptop request for me"</span></div>
+      <div class="exp-a">→ <strong style="color:var(--purple)">PP Connector</strong> — Write operation to ServiceNow. Real-time is correct here — Graph connectors are read-only indexes.</div>
+    </div>
+    <div class="exp-card pp">
+      <div class="exp-q">🎫 <span>"What's the status of my ticket?"</span></div>
+      <div class="exp-a">→ <strong style="color:var(--purple)">PP Connector</strong> — Live ticket lookup. ITSM scenario. Real-time needed for current status data.</div>
+    </div>
+    <div class="exp-card pp">
+      <div class="exp-q">🎫 <span>"Raise an incident for my broken laptop"</span></div>
+      <div class="exp-a">→ <strong style="color:var(--purple)">PP Connector</strong> — Ticket creation (write). Real-time PP connector is the only correct option for write-back.</div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPARISON TABLE -->
+<div class="table-section">
+  <div class="section-title">
+    <span class="bar" style="background:var(--blue);"></span>
+    Full Connector Comparison
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>📰 Knowledge</th>
+        <th>🛒 Catalog</th>
+        <th>🎫 Tickets</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Connector Type</strong></td>
+        <td><span class="pill pill-graph">Copilot / Graph</span></td>
+        <td><span class="pill pill-pp">Power Platform</span></td>
+        <td><span class="pill pill-pp">Power Platform</span></td>
+      </tr>
+      <tr>
+        <td><strong>Configured In</strong></td>
+        <td>M365 Admin Center</td>
+        <td>Copilot Studio → Customize</td>
+        <td>Copilot Studio → Customize</td>
+      </tr>
+      <tr>
+        <td><strong>Data Movement</strong></td>
+        <td>Indexed into Microsoft Graph</td>
+        <td>No — live API call</td>
+        <td>No — live API call</td>
+      </tr>
+      <tr>
+        <td><strong>ServiceNow Load</strong></td>
+        <td><span class="check">✓ Zero per query</span></td>
+        <td>Per query — monitor volume</td>
+        <td>Per query — monitor volume</td>
+      </tr>
+      <tr>
+        <td><strong>Read / Write</strong></td>
+        <td>Read only (index)</td>
+        <td>Read + Write</td>
+        <td>Read + Write</td>
+      </tr>
+      <tr>
+        <td><strong>Real-time Data</strong></td>
+        <td>No — crawl delay (15 min incremental)</td>
+        <td><span class="check">✓ Always current</span></td>
+        <td><span class="check">✓ Always current</span></td>
+      </tr>
+      <tr>
+        <td><strong>ACL Enforcement</strong></td>
+        <td>User Criteria at index time + query trim</td>
+        <td>SN ACL enforced at runtime</td>
+        <td>SN ACL enforced at runtime</td>
+      </tr>
+      <tr>
+        <td><strong>Scenario</strong></td>
+        <td>ESS Agent KB grounding</td>
+        <td>HRSD — catalog & HR requests</td>
+        <td>ITSM — ticket lookup & actions</td>
+      </tr>
+      <tr>
+        <td><strong>GA Status</strong></td>
+        <td><span class="pill pill-prev">Preview</span></td>
+        <td><span class="pill pill-ga">GA</span></td>
+        <td><span class="pill pill-ga">GA</span></td>
+      </tr>
+      <tr>
+        <td><strong>Scale for High Frequency</strong></td>
+        <td><span class="check">✓ Designed for it</span></td>
+        <td>⚠️ Can stress SN at scale</td>
+        <td>⚠️ Can stress SN at scale</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- CALLOUTS -->
+<div class="callouts">
+  <div class="callout crit">
+    <div class="c-icon">🚨</div>
+    <div>
+      <div class="c-title">Don't Use PP Connector for KB Articles</div>
+      <div class="c-body">KB article search is high-frequency. Using a Power Platform connector routes every employee query directly to ServiceNow's API — this can overload the SN backend. The Graph (Copilot) connector indexes content once and serves queries from Microsoft's infrastructure.</div>
+    </div>
+  </div>
+  <div class="callout tip">
+    <div class="c-icon">✅</div>
+    <div>
+      <div class="c-title">PP Connector Is Right for Write Operations</div>
+      <div class="c-body">Creating tickets, submitting catalog requests, updating records — these require real-time API calls. Graph connectors are read-only indexes. Power Platform connectors are the correct and only option for write-back scenarios.</div>
+    </div>
+  </div>
+  <div class="callout warn">
+    <div class="c-icon">⚠️</div>
+    <div>
+      <div class="c-title">Knowledge Connector Still Preview for ESS</div>
+      <div class="c-body">The ESS-specific Knowledge (Graph) connector integration is Preview only. Hierarchical permissions not supported — article-level ACL overrides KB-level. Attachments not indexed. Validate thoroughly before production rollout.</div>
+    </div>
+  </div>
+  <div class="callout info">
+    <div class="c-icon">💡</div>
+    <div>
+      <div class="c-title">Microsoft's Decision Rule</div>
+      <div class="c-body">"If the goal is knowledge discovery and grounded Q&A at scale → use Copilot (Graph) connectors. If the goal is real-time knowledge or transactional steps → use Power Platform connectors." — Microsoft Learn</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Sources:
+  <a href="https://learn.microsoft.com/en-us/microsoft-copilot-studio/knowledge-graph-vs-power-platform-connectors" target="_blank">Copilot vs PP Connectors</a> ·
+  <a href="https://learn.microsoft.com/en-us/microsoft-365/copilot/employee-self-service/servicenow" target="_blank">ESS + ServiceNow</a> ·
+  <a href="https://learn.microsoft.com/en-us/microsoft-365/copilot/connectors/servicenow-catalog-deployment" target="_blank">Catalog Connector</a> ·
+  <a href="https://learn.microsoft.com/en-us/microsoft-365/copilot/connectors/servicenow-tickets-deployment" target="_blank">Tickets Connector</a> ·
+  Microsoft Learn · April 2026 · FTA Reference
+</div>
+
+</div>
+</body>
+</html>
